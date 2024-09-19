@@ -1,0 +1,7 @@
+cradle:
+  cabal:
+    - path: "src"
+      component: "lib:shebanger"
+
+    - path: "app/Main.hs"
+      component: "shebanger:exe:shebanger"

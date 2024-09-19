@@ -1,0 +1,3 @@
+{...}:
+
+(import ./nix {}).dev-shell
