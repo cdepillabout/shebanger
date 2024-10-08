@@ -5,3 +5,9 @@ cradle:
 
     - path: "app/Main.hs"
       component: "shebanger:exe:shebanger"
+
+    - path: "test/Test.hs"
+      component: "shebanger:test:shebanger-tests"
+
+    - path: "test/Test"
+      component: "shebanger:test:shebanger-tests"
