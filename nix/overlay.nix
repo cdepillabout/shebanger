@@ -50,10 +50,16 @@ final: prev: {
         ${final.shebanger-ghc-version} =
           prev.haskell.packages.${final.shebanger-ghc-version}.override
             myHaskellOverride;
+
+        native-bignum = prev.haskell.packages.native-bignum // {
+          ${final.shebanger-ghc-version} =
+            prev.haskell.packages.native-bignum.${final.shebanger-ghc-version}.override
+              myHaskellOverride;
+        };
       };
     };
 
-  shebanger-ghc-version-short = "966";
+  shebanger-ghc-version-short = "948";
 
   shebanger-ghc-version = "ghc" + final.shebanger-ghc-version-short;
 
@@ -94,5 +100,21 @@ final: prev: {
       export NIX_GHC_LIBDIR="${final.shebanger-shell.NIX_GHC_LIBDIR}"
     '';
   };
+
+  ##############################
+  ## Statically-linked builds ##
+  ##############################
+
+  shebanger-static-haskell-pkg-set = final.pkgsStatic.myhaskell.packages.native-bignum.${final.shebanger-ghc-version};
+
+  shebanger-static = final.shebanger-static-haskell-pkg-set.shebanger;
+
+  shebanger-static-just-exe =
+    final.lib.pipe
+      final.shebanger-static
+      [
+        (final.shebanger-static-haskell-pkg-set.generateOptparseApplicativeCompletions ["shebanger"])
+        final.haskell.lib.justStaticExecutables
+      ];
 }
 
