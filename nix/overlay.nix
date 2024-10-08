@@ -71,7 +71,8 @@ final: prev: {
     final.lib.pipe
       final.shebanger
       [
-        (final.shebanger-haskell-pkg-set.generateOptparseApplicativeCompletions ["shebanger"])
+        # TODO: No optparse-applicative yet
+        # (final.shebanger-haskell-pkg-set.generateOptparseApplicativeCompletions ["shebanger"])
         final.haskell.lib.justStaticExecutables
       ];
 
