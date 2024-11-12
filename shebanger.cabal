@@ -31,8 +31,12 @@ custom-setup
 library
   hs-source-dirs:      src
   exposed-modules:     Shebanger
+                     , Shebanger.Cli
+  other-modules:       Paths_shebanger
+  autogen-modules:     Paths_shebanger
   build-depends:       base
                      , aeson
+                     , base64-bytestring
                      , bytestring
                      , containers
                      , deepseq

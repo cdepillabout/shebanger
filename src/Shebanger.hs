@@ -1,11 +1,11 @@
 module Shebanger where
 
--- import Shebanger.Cli (parseCliOpts)
--- import Shebanger.Cmd (runCmd)
--- import Shebanger.LocalConfFile (readLocalConfFile)
+import Shebanger.Cli
 
 defaultMain :: IO ()
 defaultMain = do
-  -- cmd <- parseCliOpts
-  -- runCmd cmd
-  pure ()
+  cmd <- parseCliOpts
+  runCmd cmd
+
+runCmd :: Command -> IO ()
+runCmd _ = undefined
