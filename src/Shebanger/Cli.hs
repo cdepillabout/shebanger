@@ -15,7 +15,7 @@ import Paths_shebanger (version)
 data TranslateArgs = TranslateArgs { scriptFilePath :: FilePath }
   deriving stock Show
 
-data ExecArgs = ExecArgs { shebangScriptPart :: ByteString }
+data ExecArgs = ExecArgs { shebangScriptPart :: ByteString, shebangScriptFilePath :: FilePath }
   deriving stock Show
 
 data Command
@@ -73,7 +73,7 @@ inputFileParser =
     )
 
 execArgsParser :: Parser ExecArgs
-execArgsParser = ExecArgs <$> shebangedScriptParser
+execArgsParser = ExecArgs <$> shebangedScriptParser <*> shebangScriptFilePathParser
 
 shebangedScriptParser :: Parser ByteString
 shebangedScriptParser =
@@ -85,3 +85,11 @@ shebangedScriptParser =
   where
     b64Reader :: String -> Either String ByteString
     b64Reader b64Str = decode $ ByteString.Char8.pack b64Str
+
+shebangScriptFilePathParser :: Parser FilePath
+shebangScriptFilePathParser =
+  strArgument
+    ( metavar "FILE" <>
+      help "Input shebanged script name.  Normally passed automatically by kernel." <>
+      action "file"
+    )
