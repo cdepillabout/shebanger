@@ -7,16 +7,19 @@ import Data.Foldable (for_)
 import Data.List (isSuffixOf)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Text as Text
+import Data.Text.Encoding (decodeUtf8)
 import Shebanger.Cli (Command (..), ExecArgs (..), TranslateArgs (..), parseCliOpts)
-import System.FilePath (takeFileName, (<.>))
+import System.Directory (doesFileExist)
+import System.FilePath (takeFileName, (<.>), (-<.>))
 import System.Posix (setFileMode, fileMode, getFileStatus, unionFileModes, ownerExecuteMode, groupExecuteMode, otherExecuteMode)
-import System.Environment (getArgs, lookupEnv)
+import System.Posix.Process (executeFile)
+import System.Environment (lookupEnv, setEnv)
 import Text.Read (readMaybe)
+import Data.Maybe (fromMaybe)
 
 defaultMain :: IO ()
 defaultMain = do
-  args <- getArgs
-  print args
   cmd <- parseCliOpts
   runCmd cmd
 
@@ -61,8 +64,12 @@ chunkByteString n bs
 
 runCmdExec :: ExecArgs -> IO ()
 runCmdExec execArgs = do
+  -- TODO: This is assuming the script is utf8.  That's probably not a reasonable assumption???
+  let shebangScriptPartStr = Text.unpack $ decodeUtf8 execArgs.shebangScriptPart
+  print execArgs
   -- collect the script contents into an environment variable
   maybeShebangerScriptContents <- lookupEnv "SHEBANGER_SCRIPT_CONTENTS"
+  print maybeShebangerScriptContents
   case getShebangedIndex execArgs.shebangScriptFilePath of
     Left badIndex ->
       error $
@@ -72,6 +79,40 @@ runCmdExec execArgs = do
         badIndex
     Right idx -> do
       print idx
+      maybeNextScript <- findNextScript execArgs.shebangScriptFilePath idx
+      print maybeNextScript
+      putStrLn ""
+      case maybeNextScript of
+        -- There is a next script that exists.  Update env var and execute the next script.
+        Just nextScript -> do
+          case maybeShebangerScriptContents of
+            Nothing ->
+              if idx == 0
+              then
+                setEnv "SHEBANGER_SCRIPT_CONTENTS" shebangScriptPartStr
+              else error "ERROR! This is not the first script, but no SHEBANGER_SCRIPT_CONTENTS env var was found."
+            Just envVarScriptContents ->
+              setEnv "SHEBANGER_SCRIPT_CONTENTS" (envVarScriptContents <> shebangScriptPartStr)
+          -- exec the next script
+          executeFile nextScript True [] Nothing
+        -- There is not a next script.  This script is the last script.
+        Nothing -> do
+          let fullScript = fromMaybe "" maybeShebangerScriptContents <> shebangScriptPartStr
+          -- TODO: write the script out and execute it:
+          print fullScript
+
+findNextScript :: FilePath -> Int -> IO (Maybe FilePath)
+findNextScript fp currIdx = do
+  let nextIdx = currIdx + 1
+      nextScriptName =
+        -- The initial script just ends with `.shebanged` (which we consider
+        -- index 0), so in that case just add ".1".  Otherwise, increment the
+        -- index by one.
+        if currIdx == 0
+        then fp <.> ".1"
+        else fp -<.> show nextIdx
+  exists <- doesFileExist nextScriptName
+  pure $ if exists then Just nextScriptName else Nothing
 
 -- | Returns 'Left' 'String' of the last part of the filename that it is trying
 -- to parse a number on error.
