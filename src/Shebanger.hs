@@ -1,5 +1,6 @@
 module Shebanger where
 
+import Control.Exception (finally)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString
 import Data.ByteString.Base64 (encode)
@@ -7,18 +8,15 @@ import Data.Foldable (for_)
 import Data.List (isSuffixOf)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Text as Text
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Maybe (fromMaybe)
 import Shebanger.Cli (Command (..), ExecArgs (..), TranslateArgs (..), parseCliOpts)
 import System.Directory (doesFileExist, removeFile)
 import System.FilePath (takeFileName, (<.>), (-<.>))
 import System.Posix (setFileMode, fileMode, getFileStatus, unionFileModes, ownerExecuteMode, groupExecuteMode, otherExecuteMode)
 import System.Posix.Process (executeFile)
-import System.Environment (lookupEnv, setEnv)
-import Text.Read (readMaybe)
-import Data.Maybe (fromMaybe)
-import Control.Exception (finally)
+import System.Posix.ByteString (getEnv, setEnv)
 import System.Process (callProcess)
+import Text.Read (readMaybe)
 
 defaultMain :: IO ()
 defaultMain = do
@@ -66,12 +64,7 @@ chunkByteString n bs
 
 runCmdExec :: ExecArgs -> IO ()
 runCmdExec execArgs = do
-  -- TODO: This is assuming the text of the script is utf8.  That's probably
-  -- not a reasonable assumption???
-  let shebangScriptPartStr = Text.unpack $ decodeUtf8 execArgs.shebangScriptPart
-  print execArgs
-  maybeShebangerScriptContents <- lookupEnv "SHEBANGER_SCRIPT_CONTENTS"
-  print maybeShebangerScriptContents
+  maybeShebangerScriptContents <- getEnv "SHEBANGER_SCRIPT_CONTENTS"
   case getShebangedIndex execArgs.shebangScriptFilePath of
     Left badIndex ->
       error $
@@ -81,10 +74,7 @@ runCmdExec execArgs = do
         "\", failed when trying to parse index: " <>
         badIndex
     Right idx -> do
-      print idx
       maybeNextScript <- findNextScript execArgs.shebangScriptFilePath idx
-      print maybeNextScript
-      putStrLn ""
       case maybeNextScript of
         -- There is a next script that exists.  Update env var and execute the
         -- next script.
@@ -97,7 +87,7 @@ runCmdExec execArgs = do
                 -- expect that there is not yet a SHEBANGER_SCRIPT_CONTENTS
                 -- env var.  We create the env var with the initial part of
                 -- the script.
-                setEnv "SHEBANGER_SCRIPT_CONTENTS" shebangScriptPartStr
+                setEnv "SHEBANGER_SCRIPT_CONTENTS" execArgs.shebangScriptPart True
               else
                 -- This is not the initial script (so it has a name like
                 -- script.sh.shebanger.07), but there is no
@@ -108,22 +98,20 @@ runCmdExec execArgs = do
             Just envVarScriptContents ->
               setEnv
                 "SHEBANGER_SCRIPT_CONTENTS"
-                (envVarScriptContents <> shebangScriptPartStr)
+                (envVarScriptContents <> execArgs.shebangScriptPart)
+                True
           -- exec the next script
           executeFile nextScript True [] Nothing
         -- There is not a next script.  This script is the last script.
         Nothing -> do
           let fullScript =
-                fromMaybe "" maybeShebangerScriptContents <> shebangScriptPartStr
-          -- TODO: write the script out and execute it:
-
+                fromMaybe "" maybeShebangerScriptContents <> execArgs.shebangScriptPart
               finalScriptName =
                 if idx == 0
                 then execArgs.shebangScriptFilePath <.> "final"
                 else execArgs.shebangScriptFilePath -<.> "final"
 
-          -- TODO: Assuming the script is utf8 is probably not a good idea.
-          ByteString.writeFile finalScriptName (encodeUtf8 $ Text.pack fullScript)
+          ByteString.writeFile finalScriptName fullScript
           makeExecutable finalScriptName
 
           -- Call the new executable, making sure to unlink it afterwards.
