@@ -9,13 +9,32 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as ByteString.Char8
 import Data.ByteString.Base64 (decode)
 import Data.Version (showVersion)
+import Control.Applicative ((<**>), Alternative (many, (<|>)))
 import Options.Applicative
+    ( action, argument, command, eitherReader, fullDesc, header, help, info,
+      metavar, progDesc, strArgument, execParser, helper, hsubparser,
+      simpleVersioner, CommandFields, Mod, Parser, ParserInfo
+    )
 import Paths_shebanger (version)
 
 data TranslateArgs = TranslateArgs { scriptFilePath :: FilePath }
   deriving stock Show
 
-data ExecArgs = ExecArgs { shebangScriptPart :: ByteString, shebangScriptFilePath :: FilePath }
+data ExecArgs = ExecArgs
+  { shebangScriptPart :: ByteString
+    -- ^ The base64-encoded part of the original script.
+    --
+    -- Example: @\"ICAgZWNobyAkaQpkb25lCmVjaG8KCiMgTGlzdCBzeXN0ZW0gaW5mb3JtYXRpb24KdW4=\"@
+  , shebangScriptFilePath :: FilePath
+    -- ^ The path of this shebanged script.  This is normally passed
+    -- automatically by the kernel when calling a script with a shebang line.
+    --
+    -- Example: @\"./test.sh.shebanged.7\"@
+  , additionalArgs :: [String]
+    -- ^ Additional arguments that have been passed to the script on the command line.
+    --
+    -- Example @[\"-l\", \"-a\", \"somedirectory/\"]@
+  }
   deriving stock Show
 
 data Command
@@ -73,7 +92,12 @@ inputFileParser =
     )
 
 execArgsParser :: Parser ExecArgs
-execArgsParser = ExecArgs <$> shebangedScriptParser <*> shebangScriptFilePathParser
+execArgsParser =
+  ExecArgs
+    <$> shebangedScriptParser
+    <*> shebangScriptFilePathParser
+    <*> additionalArgsParser
+
 
 shebangedScriptParser :: Parser ByteString
 shebangedScriptParser =
@@ -93,3 +117,11 @@ shebangScriptFilePathParser =
       help "Input shebanged script name.  Normally passed automatically by kernel." <>
       action "file"
     )
+
+additionalArgsParser :: Parser [String]
+additionalArgsParser =
+  many $
+    strArgument
+      ( metavar "ARG" <>
+        help "arguments to pass to the underlying script being called"
+      )

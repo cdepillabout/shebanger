@@ -14,12 +14,16 @@ import System.Directory (doesFileExist, removeFile)
 import System.FilePath (takeFileName, (<.>), (-<.>))
 import System.Posix (setFileMode, fileMode, getFileStatus, unionFileModes, ownerExecuteMode, groupExecuteMode, otherExecuteMode)
 import System.Posix.Process (executeFile)
-import System.Posix.ByteString (getEnv, setEnv)
+import System.Posix.ByteString (getEnv, setEnv, unsetEnv)
 import System.Process (callProcess)
 import Text.Read (readMaybe)
 
+import System.Environment (getArgs)
+
 defaultMain :: IO ()
 defaultMain = do
+  args <- getArgs
+  print args
   cmd <- parseCliOpts
   runCmd cmd
 
@@ -101,7 +105,7 @@ runCmdExec execArgs = do
                 (envVarScriptContents <> execArgs.shebangScriptPart)
                 True
           -- exec the next script
-          executeFile nextScript True [] Nothing
+          executeFile nextScript True execArgs.additionalArgs Nothing
         -- There is not a next script.  This script is the last script.
         Nothing -> do
           let fullScript =
@@ -114,9 +118,13 @@ runCmdExec execArgs = do
           ByteString.writeFile finalScriptName fullScript
           makeExecutable finalScriptName
 
+          -- unset the SHEBANGER_SCRIPT_CONTENTS env var, since we don't want
+          -- it to be inherited by the child.
+          unsetEnv "SHEBANGER_SCRIPT_CONTENTS"
+
           -- Call the new executable, making sure to unlink it afterwards.
           finally
-            (callProcess finalScriptName [])
+            (callProcess finalScriptName execArgs.additionalArgs)
             (removeFile finalScriptName)
 
 findNextScript :: FilePath -> Int -> IO (Maybe FilePath)
