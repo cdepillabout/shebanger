@@ -41,8 +41,9 @@ distributions!
 
 ## Usage
 
-`shebanger` assumes it will be available on your `PATH`.  You might see errors
-with the following commands if `shebanger` can't be found on your `PATH`.
+`shebanger` assumes it will be available on your `PATH`, and be called
+`shebanger`.  You will likely see errors with the following commands if
+`shebanger` can't be found on your `PATH` or is not named exactly `shebanger`.
 
 There is an example shell script to use with `shebanger` in this repo called
 [`test.sh`](./test.sh):
