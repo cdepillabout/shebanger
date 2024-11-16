@@ -35,34 +35,18 @@ library
   other-modules:       Paths_shebanger
   autogen-modules:     Paths_shebanger
   build-depends:       base
-                     , aeson
                      , base64-bytestring
                      , bytestring
                      , containers
-                     , deepseq
                      , directory
-                     , file-embed
                      , filepath
                      , from-sum
-                     , http-api-data
-                     , http-client-tls
-                     , http-media
-                     , network
-                     , network-bsd
                      , optparse-applicative
-                     , parsec
                      , pretty-simple
                      , process
-                     , random
-                     , servant
-                     , servant-client
-                     , servant-client-core
-                     , sqlite-simple
                      , text
                      , time
                      , unix
-                     , uuid
-                     , yaml
   ghc-options:         -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
   default-extensions:  DataKinds
                        DeriveDataTypeable
