@@ -32,11 +32,22 @@ runCmd = \case
   Translate transArgs -> runCmdTranslate transArgs
   Exec execArgs -> runCmdExec execArgs
 
+-- | The length of chunks of the input script.
+--
+-- The input script will be chunked into parts of this many bytes, then base-64
+-- encoded (which increases the length by about 33%).  This base-64-encoded string
+-- will then be put into the shebang line of all the shebanged scripts.
+--
+-- Note that Linux has a limit on how long a shebang line can be, so in practice this
+-- has to be below 150 characters or so.
+inputScriptChunkLength :: Int
+inputScriptChunkLength = 50
+
 runCmdTranslate :: TranslateArgs -> IO ()
 runCmdTranslate transArgs = do
   let inputScriptFileName = takeFileName transArgs.scriptFilePath
   inputScriptContents <- ByteString.readFile transArgs.scriptFilePath
-  let chunkedInputScript = chunkByteString 50 inputScriptContents
+  let chunkedInputScript = chunkByteString inputScriptChunkLength inputScriptContents
       b64ChunkedInputScript = fmap encode chunkedInputScript
   writeShebanged inputScriptFileName b64ChunkedInputScript
 
