@@ -75,7 +75,9 @@ jobs:
 
       - run: nix-build
 
-      - run: nix-build shell.nix
+      # TODO: I don't know what's going on, but this fails for some reason on
+      # GitHub Actions with a message about being out of disk space...
+      # - run: nix-build shell.nix
 
   nix-static:
     name: nix static / ubuntu-latest
