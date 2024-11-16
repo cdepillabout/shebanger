@@ -18,12 +18,14 @@ import System.Posix.ByteString (getEnv, setEnv, unsetEnv)
 import System.Process (callProcess)
 import Text.Read (readMaybe)
 
-import System.Environment (getArgs)
+-- $setup
+--
+-- We need things from QuickCheck for some of the tests.
+--
+-- >>> import Test.QuickCheck
 
 defaultMain :: IO ()
 defaultMain = do
-  args <- getArgs
-  print args
   cmd <- parseCliOpts
   runCmd cmd
 
@@ -176,6 +178,25 @@ getShebangedIndex fname =
         | num < 1 -> Left strNum
         | otherwise -> Right num
 
+-- | Split a list based on a predicate.
+--
+-- >>> split (== ' ') "hello world my name is bob"
+-- "hello" :| ["world","my","name","is","bob"]
+--
+-- A predicate of @'const' 'True'@ splits on everything, leaving you with
+-- a list of empty lists, with one more entry than your original list:
+--
+-- >>> split (const True) "bye"
+-- "" :| ["","",""]
+--
+-- A predicate of @'const' 'False'@ produces no splits:
+--
+-- >>> split (const False) "bye"
+-- "bye" :| []
+--
+-- An empty list doesn't get split, regardless of the predicate:
+--
+-- prop> \(Fun _ f) -> split f "" == ("" :| [])
 split :: forall a. (a -> Bool) -> [a] -> NonEmpty [a]
 split _ [] = [] :| []
 split p t = loop t
