@@ -13,6 +13,7 @@ copyright:           2024-2024 Dennis Gosnell
 category:            Productivity
 build-type:          Custom
 extra-source-files:  README.md
+                   , CHANGELOG.md
                    , default.nix
                    , nix/default.nix
                    , nix/overlay.nix
