@@ -19,7 +19,7 @@ the [GitHub Releases](https://github.com/cdepillabout/shebanger/releases).
 
 ### Nix / NixOS
 
-Cloudy can be built with Nix by using the `.nix` files in this repo:
+`shebanger` can be built with Nix by using the `.nix` files in this repo:
 
 ```console
 $ nix-build
@@ -36,7 +36,7 @@ $ nix-build '<nixpkgs>' -A haskellPackages.shebanger
 
 ### Other Distros
 
-PRs are welcome adding instructions for installing Cloudy on other Linux
+PRs are welcome adding instructions for installing `shebanger` on other Linux
 distributions!
 
 ## Usage
